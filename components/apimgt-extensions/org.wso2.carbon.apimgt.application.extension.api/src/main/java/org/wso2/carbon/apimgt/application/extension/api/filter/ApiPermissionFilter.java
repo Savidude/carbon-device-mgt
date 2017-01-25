@@ -1,3 +1,20 @@
+/*
+ * Copyright (c) 2016, WSO2 Inc. (http://www.wso2.org) All Rights Reserved.
+ *
+ * WSO2 Inc. licenses this file to you under the Apache License,
+ * Version 2.0 (the "License"); you may not use this file except
+ * in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing,
+ * software distributed under the License is distributed on an
+ * "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+ * KIND, either express or implied. See the License for the
+ * specific language governing permissions and limitations
+ * under the License.
+ */
 package org.wso2.carbon.apimgt.application.extension.api.filter;
 
 import org.apache.commons.logging.Log;
@@ -39,6 +56,9 @@ public class ApiPermissionFilter implements Filter {
                 PermissionConfiguration permissionConfiguration = (PermissionConfiguration)
                         unmarshaller.unmarshal(permissionStream);
                 permissions = permissionConfiguration.getPermissions();
+                for (Permission permission : permissions) {
+                    APIUtil.putPermission(PERMISSION_PREFIX + permission.getPath());
+                }
             } catch (JAXBException e) {
                 log.error("invalid permissions.xml", e);
             }
@@ -102,7 +122,7 @@ public class ApiPermissionFilter implements Filter {
                                 .getThreadLocalCarbonContext().getTenantId());
             return userRealm.getAuthorizationManager().isUserAuthorized(username, permission, action);
         } catch (UserStoreException e) {
-            String errorMsg = String.format("Unable to authorize the user : %s", username, e);
+            String errorMsg = String.format("Unable to authorize the user : %s", username);
             log.error(errorMsg, e);
             return false;
         }

@@ -17,15 +17,24 @@
  */
 package org.wso2.carbon.device.mgt.core.service;
 
-import org.wso2.carbon.device.mgt.common.*;
+import org.wso2.carbon.device.mgt.common.Device;
+import org.wso2.carbon.device.mgt.common.DeviceIdentifier;
+import org.wso2.carbon.device.mgt.common.DeviceManagementException;
+import org.wso2.carbon.device.mgt.common.EnrolmentInfo;
+import org.wso2.carbon.device.mgt.common.FeatureManager;
+import org.wso2.carbon.device.mgt.common.InvalidDeviceException;
+import org.wso2.carbon.device.mgt.common.MonitoringOperation;
+import org.wso2.carbon.device.mgt.common.PaginationRequest;
+import org.wso2.carbon.device.mgt.common.PaginationResult;
 import org.wso2.carbon.device.mgt.common.configuration.mgt.PlatformConfiguration;
 import org.wso2.carbon.device.mgt.common.license.mgt.License;
 import org.wso2.carbon.device.mgt.common.operation.mgt.Activity;
 import org.wso2.carbon.device.mgt.common.operation.mgt.Operation;
 import org.wso2.carbon.device.mgt.common.operation.mgt.OperationManagementException;
+import org.wso2.carbon.device.mgt.common.policy.mgt.PolicyMonitoringManager;
 
-import java.util.HashMap;
 import java.util.Date;
+import java.util.HashMap;
 import java.util.List;
 
 /**
@@ -73,7 +82,7 @@ public interface DeviceManagementProviderService {
      */
     PaginationResult getAllDevices(PaginationRequest request) throws DeviceManagementException;
 
-    void sendEnrolmentInvitation(EmailMetaInfo metaInfo) throws DeviceManagementException;
+    void sendEnrolmentInvitation(String templateName, EmailMetaInfo metaInfo) throws DeviceManagementException;
 
     void sendRegistrationEmail(EmailMetaInfo metaInfo) throws DeviceManagementException;
 
@@ -228,6 +237,12 @@ public interface DeviceManagementProviderService {
 
     boolean setActive(DeviceIdentifier deviceId, boolean status) throws DeviceManagementException;
 
+    /**
+     * Returns the device of specified id.
+     * @param deviceId device Id
+     * @return Device returns null when device is not avaialble.
+     * @throws DeviceManagementException
+     */
     Device getDevice(DeviceIdentifier deviceId) throws DeviceManagementException;
 
     Device getDevice(DeviceIdentifier deviceId, Date since) throws DeviceManagementException;
@@ -283,5 +298,13 @@ public interface DeviceManagementProviderService {
     List<Activity> getActivitiesUpdatedAfter(long timestamp, int limit, int offset) throws OperationManagementException;
 
     int getActivityCountUpdatedAfter(long timestamp) throws OperationManagementException;
+
+    List<MonitoringOperation> getMonitoringOperationList(String deviceType);
+
+    int getDeviceMonitoringFrequency(String deviceType);
+
+    boolean isDeviceMonitoringEnabled(String deviceType);
+
+    PolicyMonitoringManager getPolicyMonitoringManager(String deviceType);
 
 }

@@ -28,43 +28,32 @@ import java.io.Serializable;
         + "features")
 public class ProfileFeature implements Serializable {
 
-    @ApiModelProperty(
-            name = "id",
+    @ApiModelProperty(name = "id",
             value = "Define the ID",
             required = true,
             example = "1")
     private int id;
-
-    @ApiModelProperty(
-            name = "featureCode",
+    @ApiModelProperty(name = "featureCode",
             value = "Provide the code that defines the policy you wish to add",
             required = true,
             example = "CAMERA")
     private String featureCode;
-
-    @ApiModelProperty(
-            name = "profileId",
+    @ApiModelProperty(name = "profileId",
             value = "Define the ID of the profile",
             required = true,
             example = "1")
     private int profileId;
-
-    @ApiModelProperty(
-            name = "deviceType",
+    @ApiModelProperty(name = "deviceTypeId",
             value = "The ID used to define the type of the device platform",
             required = true,
             example = "android")
     private String deviceType;
-
-    @ApiModelProperty(
-            name = "content",
+    @ApiModelProperty(name = "content",
             value = "The list of parameters that define the policy",
             required = true,
             example = "{\\\"enabled\\\":false}")
     private Object content;
-
-    @ApiModelProperty(
-            name = "payLoad",
+    @ApiModelProperty(name = "payLoad",
             value = "The payload which is submitted to each feature",
             required = true)
     private String payLoad;

@@ -1,13 +1,10 @@
 /*
  Copyright (c) 2016, WSO2 Inc. (http://www.wso2.org) All Rights Reserved.
-
  WSO2 Inc. licenses this file to you under the Apache License,
  Version 2.0 (the "License"); you may not use this file except
  in compliance with the License.
  You may obtain a copy of the License at
-
  http://www.apache.org/licenses/LICENSE-2.0
-
  Unless required by applicable law or agreed to in writing,
  software distributed under the License is distributed on an
  "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND,
@@ -50,7 +47,7 @@ var dynamicForm = '<div class="dynamic-search-param row"><div class="row"><a cla
                   '</option><option value = "vendor">Vendor</option><option value = "osVersion">OS Version' +
                   '</option><option value = "batteryLevel">Battery Level</option><option value =' +
                   ' "internalTotalMemory">Internal Total Memory</option> <option value ="internalAvailableMemory">' +
-                  'Internal Available Memory</option> <option value = "externalTotalMemory">externalTotalMemory</option>' +
+                  'Internal Available Memory</option> <option value = "externalTotalMemory">External Total Memory</option>' +
                   ' <option value = "externalAvailableMemory">External Available Memory' +
                   '</option> <option value = "connectionType">Connection Type</option> <option value =' +
                   ' "ssid">SSID</option><option value = "cpuUsage">CPU Usage</option><option value = "totalRAMMemory">' +
@@ -86,7 +83,7 @@ $(document).ready(function () {
      */
     function getOperators(keyValue) {
         if (nonNumericKeyValuePair.indexOf(keyValue) < 0) {
-            return '<option> =</option><option> !=</option><option> <</option><option> =<</option><option>' +
+            return '<option> =</option><option> !=</option><option> <</option><option> <=</option><option>' +
                 ' ></option><option> >=</option>';
         } else {
             return '<option> =</option><option> !=</option><option><option> %</option>';

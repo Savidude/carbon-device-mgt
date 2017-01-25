@@ -42,7 +42,7 @@ import org.wso2.carbon.device.mgt.core.config.DeviceManagementConfig;
 import org.wso2.carbon.device.mgt.core.config.datasource.DataSourceConfig;
 import org.wso2.carbon.device.mgt.core.config.tenant.PlatformConfigurationManagementServiceImpl;
 import org.wso2.carbon.device.mgt.core.dao.DeviceManagementDAOFactory;
-import org.wso2.carbon.device.mgt.core.group.mgt.dao.GroupManagementDAOFactory;
+import org.wso2.carbon.device.mgt.core.dao.GroupManagementDAOFactory;
 import org.wso2.carbon.device.mgt.core.notification.mgt.NotificationManagementServiceImpl;
 import org.wso2.carbon.device.mgt.core.notification.mgt.dao.NotificationManagementDAOFactory;
 import org.wso2.carbon.device.mgt.core.operation.mgt.OperationManagerImpl;
@@ -53,6 +53,7 @@ import org.wso2.carbon.device.mgt.core.service.DeviceManagementProviderService;
 import org.wso2.carbon.device.mgt.core.service.DeviceManagementProviderServiceImpl;
 import org.wso2.carbon.device.mgt.core.service.GroupManagementProviderService;
 import org.wso2.carbon.device.mgt.core.service.GroupManagementProviderServiceImpl;
+import org.wso2.carbon.device.mgt.core.task.DeviceTaskManagerService;
 import org.wso2.carbon.device.mgt.core.util.DeviceManagementSchemaInitializer;
 import org.wso2.carbon.email.sender.core.service.EmailSenderService;
 import org.wso2.carbon.ndatasource.core.DataSourceService;
@@ -272,15 +273,22 @@ public class DeviceManagementServiceComponent {
      * @param deviceManagementService An instance of DeviceManagementService
      */
     protected void setDeviceManagementService(DeviceManagementService deviceManagementService) {
-        if (log.isDebugEnabled()) {
-            log.debug("Setting Device Management Service Provider: '" +
-                    deviceManagementService.getType() + "'");
-        }
-        synchronized (LOCK) {
-            deviceManagers.add(deviceManagementService);
-            for (PluginInitializationListener listener : listeners) {
-                listener.registerDeviceManagementService(deviceManagementService);
+        try {
+            if (log.isDebugEnabled()) {
+                log.debug("Setting Device Management Service Provider: '" +
+                                  deviceManagementService.getType() + "'");
             }
+            synchronized (LOCK) {
+                deviceManagers.add(deviceManagementService);
+                for (PluginInitializationListener listener : listeners) {
+                    listener.registerDeviceManagementService(deviceManagementService);
+                }
+            }
+            log.info("Device Type deployed successfully : " + deviceManagementService.getType() + " for tenant "
+                             + deviceManagementService.getProvisioningConfig().getProviderTenantDomain());
+        } catch (Throwable e) {
+            log.error("Failed to register device management service for device type" + deviceManagementService.getType() +
+                            " for tenant " + deviceManagementService.getProvisioningConfig().getProviderTenantDomain(), e);
         }
     }
 
@@ -395,4 +403,18 @@ public class DeviceManagementServiceComponent {
         DeviceManagementDataHolder.getInstance().setEmailSenderService(null);
     }
 
+
+    protected void setDeviceTaskManagerService(DeviceTaskManagerService emailSenderService) {
+        if (log.isDebugEnabled()) {
+        }
+        DeviceManagementDataHolder.getInstance().setDeviceTaskManagerService(emailSenderService);
+    }
+
+    protected void unsetDeviceTaskManagerService(DeviceTaskManagerService emailSenderService) {
+        if (log.isDebugEnabled()) {
+        }
+        DeviceManagementDataHolder.getInstance().setDeviceTaskManagerService(null);
+    }
 }
+
+

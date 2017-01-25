@@ -32,6 +32,8 @@ import org.wso2.carbon.apimgt.webapp.publisher.config.APIResourceConfiguration;
 import org.wso2.carbon.apimgt.webapp.publisher.config.WebappPublisherConfig;
 import org.wso2.carbon.apimgt.webapp.publisher.internal.APIPublisherDataHolder;
 import org.wso2.carbon.apimgt.webapp.publisher.lifecycle.util.AnnotationProcessor;
+import org.wso2.carbon.context.PrivilegedCarbonContext;
+import org.wso2.carbon.user.api.UserStoreException;
 
 import javax.servlet.ServletContext;
 import java.io.IOException;
@@ -57,28 +59,23 @@ public class APIPublisherLifecycleListener implements LifecycleListener {
             boolean isManagedApi = (param != null && !param.isEmpty()) && Boolean.parseBoolean(param);
 
             String profile = System.getProperty(PROPERTY_PROFILE);
-
             if (WebappPublisherConfig.getInstance().getProfiles().getProfile().contains(profile.toLowerCase())
                     && isManagedApi) {
                 try {
                     AnnotationProcessor annotationProcessor = new AnnotationProcessor(context);
-                    Set<String> annotatedAPIClasses = annotationProcessor.
-                            scanStandardContext(org.wso2.carbon.apimgt.annotations.api.API.class.getName());
-
+                    Set<String> annotatedSwaggerAPIClasses = annotationProcessor.
+                            scanStandardContext(io.swagger.annotations.SwaggerDefinition.class.getName());
                     List<APIResourceConfiguration> apiDefinitions = annotationProcessor.extractAPIInfo(servletContext,
-                            annotatedAPIClasses);
-
+                            annotatedSwaggerAPIClasses);
                     for (APIResourceConfiguration apiDefinition : apiDefinitions) {
-
                         APIConfig apiConfig = APIPublisherUtil.buildApiConfig(servletContext, apiDefinition);
-
+                        APIPublisherUtil.setResourceAuthTypes(servletContext,apiConfig);
                         try {
                             int tenantId = APIPublisherDataHolder.getInstance().getTenantManager().
                                     getTenantId(apiConfig.getTenantDomain());
 
                             boolean isTenantActive = APIPublisherDataHolder.getInstance().
                                     getTenantManager().isTenantActive(tenantId);
-
                             if (isTenantActive) {
                                 apiConfig.init();
                                 API api = APIPublisherUtil.getAPI(apiConfig);
@@ -112,6 +109,9 @@ public class APIPublisherLifecycleListener implements LifecycleListener {
                     log.error("Error encountered while discovering annotated classes", e);
                 } catch (ClassNotFoundException e) {
                     log.error("Error while scanning class for annotations", e);
+                } catch (UserStoreException e) {
+                    log.error("Error while retrieving tenant admin user for the tenant domain"
+                                      + PrivilegedCarbonContext.getThreadLocalCarbonContext().getTenantDomain(), e);
                 }
             }
         }

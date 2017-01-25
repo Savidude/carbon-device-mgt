@@ -18,9 +18,19 @@
  */
 package org.wso2.carbon.device.mgt.jaxrs.service.api;
 
-import io.swagger.annotations.*;
-import org.wso2.carbon.apimgt.annotations.api.API;
-import org.wso2.carbon.apimgt.annotations.api.Permission;
+import io.swagger.annotations.SwaggerDefinition;
+import io.swagger.annotations.Info;
+import io.swagger.annotations.ExtensionProperty;
+import io.swagger.annotations.Extension;
+import io.swagger.annotations.Tag;
+import io.swagger.annotations.Api;
+import io.swagger.annotations.ApiOperation;
+import io.swagger.annotations.ApiParam;
+import io.swagger.annotations.ApiResponse;
+import io.swagger.annotations.ApiResponses;
+import io.swagger.annotations.ResponseHeader;
+import org.wso2.carbon.apimgt.annotations.api.Scope;
+import org.wso2.carbon.apimgt.annotations.api.Scopes;
 import org.wso2.carbon.device.mgt.common.Device;
 import org.wso2.carbon.device.mgt.common.Feature;
 import org.wso2.carbon.device.mgt.common.app.mgt.Application;
@@ -28,8 +38,9 @@ import org.wso2.carbon.device.mgt.common.operation.mgt.Operation;
 import org.wso2.carbon.device.mgt.common.search.SearchContext;
 import org.wso2.carbon.device.mgt.jaxrs.beans.DeviceList;
 import org.wso2.carbon.device.mgt.jaxrs.beans.ErrorResponse;
-import org.wso2.carbon.policy.mgt.common.Policy;
-import org.wso2.carbon.policy.mgt.common.monitor.ComplianceData;
+import org.wso2.carbon.device.mgt.jaxrs.util.Constants;
+import org.wso2.carbon.device.mgt.common.policy.mgt.Policy;
+import org.wso2.carbon.device.mgt.common.policy.mgt.monitor.NonComplianceData;
 
 import javax.validation.constraints.Size;
 import javax.ws.rs.*;
@@ -39,8 +50,85 @@ import javax.ws.rs.core.Response;
 /**
  * Device related REST-API. This can be used to manipulated device related details.
  */
-@API(name = "DeviceManagement", version = "1.0.0", context = "/api/device-mgt/v1.0/devices", tags = {"device_management"})
-
+@SwaggerDefinition(
+        info = @Info(
+                version = "1.0.0",
+                title = "",
+                extensions = {
+                        @Extension(properties = {
+                                @ExtensionProperty(name = "name", value = "DeviceManagement"),
+                                @ExtensionProperty(name = "context", value = "/api/device-mgt/v1.0/devices"),
+                        })
+                }
+        ),
+        tags = {
+                @Tag(name = "device_management", description = "")
+        }
+)
+@Scopes(
+        scopes = {
+                @Scope(
+                        name = "Getting Details of Registered Devices",
+                        description = "Getting Details of Registered Devices",
+                        key = "perm:devices:view",
+                        permissions = {"/device-mgt/devices/owning-device/view"}
+                ),
+                @Scope(
+                        name = "Getting Details of a Device",
+                        description = "Getting Details of a Device",
+                        key = "perm:devices:details",
+                        permissions = {"/device-mgt/devices/owning-device/view"}
+                ),
+                @Scope(
+                        name = "Update the device specified by device id",
+                        description = "Update the device specified by device id",
+                        key = "perm:devices:update",
+                        permissions = {"/device-mgt/devices/owning-device/view"}
+                ),
+                @Scope(
+                        name = "Delete the device specified by device id",
+                        description = "Delete the device specified by device id",
+                        key = "perm:devices:delete",
+                        permissions = {"/device-mgt/devices/owning-device/view"}
+                ),
+                @Scope(
+                        name = "Getting Feature Details of a Device",
+                        description = "Getting Feature Details of a Device",
+                        key = "perm:devices:features",
+                        permissions = {"/device-mgt/devices/owning-device/view"}
+                ),
+                @Scope(
+                        name = "Advanced Search for Devices",
+                        description = "Advanced Search for Devices",
+                        key = "perm:devices:search",
+                        permissions = {"/device-mgt/devices/owning-device/view"}
+                ),
+                @Scope(
+                        name = "Getting Installed Application Details of a Device",
+                        description = "Getting Installed Application Details of a Device",
+                        key = "perm:devices:applications",
+                        permissions = {"/device-mgt/devices/owning-device/view"}
+                ),
+                @Scope(
+                        name = "Getting Device Operation Details",
+                        description = "Getting Device Operation Details",
+                        key = "perm:devices:operations",
+                        permissions = {"/device-mgt/devices/owning-device/view"}
+                ),
+                @Scope(
+                        name = "Get the details of the policy that is enforced on a device.",
+                        description = "Get the details of the policy that is enforced on a device.",
+                        key = "perm:devices:effective-policy",
+                        permissions = {"/device-mgt/devices/owning-device/view"}
+                ),
+                @Scope(
+                        name = "Getting Policy Compliance Details of a Device",
+                        description = "Getting Policy Compliance Details of a Device",
+                        key = "perm:devices:compliance-data",
+                        permissions = {"/device-mgt/devices/owning-device/view"}
+                )
+        }
+)
 @Path("/devices")
 @Api(value = "Device Management", description = "This API carries all device management related operations " +
         "such as get all the available devices, etc.")
@@ -54,7 +142,13 @@ public interface DeviceManagementService {
             httpMethod = "GET",
             value = "Getting Details of Registered Devices",
             notes = "Provides details of all the devices enrolled with WSO2 EMM.",
-            tags = "Device Management")
+            tags = "Device Management",
+            extensions = {
+            @Extension(properties = {
+                    @ExtensionProperty(name = Constants.SCOPE, value = "perm:devices:view")
+            })
+    }
+    )
     @ApiResponses(value = {
             @ApiResponse(code = 200, message = "OK. \n Successfully fetched the list of devices.",
                     response = DeviceList.class,
@@ -73,7 +167,8 @@ public interface DeviceManagementService {
                     }),
             @ApiResponse(
                     code = 304,
-                    message = "Not Modified. \n Empty body because the client already has the latest version of the requested resource.\n"),
+                    message = "Not Modified. \n Empty body because the client already has the latest version of " +
+                            "the requested resource.\n"),
             @ApiResponse(
                     code = 400,
                     message = "The incoming request has more than one selection criteria defined via the query parameters.",
@@ -90,7 +185,6 @@ public interface DeviceManagementService {
                     message = "Internal Server Error. \n Server error occurred while fetching the device list.",
                     response = ErrorResponse.class)
     })
-    @Permission(name = "View Devices", permission = "/device-mgt/devices/owning-device/view")
     Response getDevices(
             @ApiParam(
                     name = "name",
@@ -128,6 +222,12 @@ public interface DeviceManagementService {
             @QueryParam("status")
             @Size(max = 45)
             String status,
+            @ApiParam(
+                    name = "groupId",
+                    value = "Id of the group which device belongs",
+                    required = false)
+            @QueryParam("groupId")
+                    int groupId,
             @ApiParam(
                     name = "since",
                     value = "Checks if the requested variant was created since the specified date-time.\n" +
@@ -167,7 +267,13 @@ public interface DeviceManagementService {
             httpMethod = "GET",
             value = "Getting Details of a Device",
             notes = "Get the details of a device by specifying the device type and device identifier.",
-            tags = "Device Management")
+            tags = "Device Management",
+            extensions = {
+                @Extension(properties = {
+                        @ExtensionProperty(name = Constants.SCOPE, value = "perm:devices:details")
+                })
+            }
+    )
     @ApiResponses(
             value = {
                     @ApiResponse(
@@ -189,7 +295,8 @@ public interface DeviceManagementService {
                             }),
                     @ApiResponse(
                             code = 304,
-                            message = "Not Modified. Empty body because the client already has the latest version of the requested resource.\n"),
+                            message = "Not Modified. Empty body because the client already has the latest version" +
+                                    " of the requested resource.\n"),
                     @ApiResponse(
                             code = 400,
                             message = "Bad Request. \n Invalid request or validation error.",
@@ -204,7 +311,6 @@ public interface DeviceManagementService {
                                     "Server error occurred while retrieving the device details.",
                             response = ErrorResponse.class)
             })
-    @Permission(name = "View Devices", permission = "/device-mgt/devices/owning-device/view")
     Response getDevice(
             @ApiParam(
                     name = "type",
@@ -230,16 +336,23 @@ public interface DeviceManagementService {
             @HeaderParam("If-Modified-Since")
             String ifModifiedSince);
 
-    //device delete request would looks like follows
-    //DELETE devices/type/virtual_firealarm/id/us06ww93auzp
-    @DELETE
-    @Path("/type/{device-type}/id/{device-id}")
+    //device rename request would looks like follows
+    //POST devices/type/virtual_firealarm/id/us06ww93auzp/rename
+    @POST
+    @Path("/type/{device-type}/id/{device-id}/rename")
     @ApiOperation(
             produces = MediaType.APPLICATION_JSON,
-            httpMethod = "DELETE",
-            value = "Delete the device speccified by device id",
-            notes = "Returns the status of the deleted device operation.",
-            tags = "Device Management")
+            consumes = MediaType.APPLICATION_JSON,
+            httpMethod = "POST",
+            value = "Update the device specified by device id",
+            notes = "Returns the status of the updated device operation.",
+            tags = "Device Management",
+            extensions = {
+                    @Extension(properties = {
+                            @ExtensionProperty(name = Constants.SCOPE, value = "perm:devices:update")
+                    })
+            }
+    )
     @ApiResponses(
             value = {
                     @ApiResponse(
@@ -277,8 +390,81 @@ public interface DeviceManagementService {
                                     "Server error occurred while retrieving information requested device.",
                             response = ErrorResponse.class)
             })
-    //TODO need to introduce delete permission
-    @Permission(name = "View Devices", permission = "/device-mgt/devices/owning-device/view")
+    Response renameDevice(
+            @ApiParam(
+                    name = "device",
+                    value = "The payload containing new name for device with updated name.",
+                    required = true)
+                    Device device,
+            @ApiParam(
+                    name = "device-type",
+                    value = "The device type, such as ios, android or windows.",
+                    required = true)
+            @PathParam("device-type")
+            @Size(max = 45)
+                    String deviceType,
+            @ApiParam(
+                    name = "device-id",
+                    value = "The device identifier of the device.",
+                    required = true)
+            @PathParam("device-id")
+            @Size(max = 45)
+                    String deviceId);
+
+    //device remove request would looks like follows
+    //DELETE devices/type/virtual_firealarm/id/us06ww93auzp
+    @DELETE
+    @Path("/type/{device-type}/id/{device-id}")
+    @ApiOperation(
+            produces = MediaType.APPLICATION_JSON,
+            consumes = MediaType.APPLICATION_JSON,
+            httpMethod = "DELETE",
+            value = "Remove the device specified by device id",
+            notes = "Returns the status of the deleted device operation.",
+            tags = "Device Management",
+            extensions = {
+                    @Extension(properties = {
+                            @ExtensionProperty(name = Constants.SCOPE, value = "perm:devices:delete")
+                    })
+            }
+    )
+    @ApiResponses(
+            value = {
+                    @ApiResponse(
+                            code = 200,
+                            message = "OK. \n Successfully deleted the device.",
+                            response = Device.class,
+                            responseHeaders = {
+                                    @ResponseHeader(
+                                            name = "Content-Type",
+                                            description = "The content type of the body"),
+                                    @ResponseHeader(
+                                            name = "ETag",
+                                            description = "Entity Tag of the response resource.\n" +
+                                                    "Used by caches, or in conditional requests."),
+                                    @ResponseHeader(
+                                            name = "Last-Modified",
+                                            description = "Date and time the resource has been modified the last time.\n" +
+                                                    "Used by caches, or in conditional requests."),
+                            }),
+                    @ApiResponse(
+                            code = 304,
+                            message = "Not Modified. Empty body because the client already has the latest " +
+                                    "version of the requested resource."),
+                    @ApiResponse(
+                            code = 400,
+                            message = "Bad Request. \n Invalid request or validation error.",
+                            response = ErrorResponse.class),
+                    @ApiResponse(
+                            code = 404,
+                            message = "Not Found. \n No device is found under the provided type and id.",
+                            response = ErrorResponse.class),
+                    @ApiResponse(
+                            code = 500,
+                            message = "Internal Server Error. \n " +
+                                    "Server error occurred while retrieving information requested device.",
+                            response = ErrorResponse.class)
+            })
     Response deleteDevice(
             @ApiParam(
                     name = "device-type",
@@ -286,15 +472,14 @@ public interface DeviceManagementService {
                     required = true)
             @PathParam("device-type")
             @Size(max = 45)
-            String deviceType,
+                    String deviceType,
             @ApiParam(
                     name = "device-id",
                     value = "The device identifier of the device.",
                     required = true)
             @PathParam("device-id")
             @Size(max = 45)
-            String deviceId);
-
+                    String deviceId);
 
     @GET
     @Path("/{type}/{id}/features")
@@ -306,7 +491,13 @@ public interface DeviceManagementService {
             notes = "WSO2 EMM features enable you to carry out many operations based on the device platform. " +
                     "Using this REST API you can get the features that can be carried out on a preferred device type," +
                     " such as iOS, Android or Windows.",
-            tags = "Device Management")
+            tags = "Device Management",
+            extensions = {
+            @Extension(properties = {
+                    @ExtensionProperty(name = Constants.SCOPE, value = "perm:devices:features")
+            })
+    }
+    )
     @ApiResponses(
             value = {
                     @ApiResponse(
@@ -355,7 +546,6 @@ public interface DeviceManagementService {
                                     "Server error occurred while retrieving the feature list for the device platform.",
                             response = ErrorResponse.class)
             })
-    @Permission(name = "View Devices", permission = "/device-mgt/devices/owning-device/view")
     Response getFeaturesOfDevice(
             @ApiParam(
                     name = "type",
@@ -390,7 +580,13 @@ public interface DeviceManagementService {
             httpMethod = "POST",
             value = "Advanced Search for Devices",
             notes = "Search for devices by filtering the search result through the specified search terms.",
-            tags = "Device Management")
+            tags = "Device Management",
+            extensions = {
+                @Extension(properties = {
+                        @ExtensionProperty(name = Constants.SCOPE, value = "perm:devices:search")
+                })
+            }
+    )
     @ApiResponses(
             value = {
                     @ApiResponse(
@@ -433,7 +629,6 @@ public interface DeviceManagementService {
                                     "Server error occurred while getting the device details.",
                             response = ErrorResponse.class)
             })
-    @Permission(name = "View Devices", permission = "/device-mgt/devices/owning-device/view")
     Response searchDevices(
             @ApiParam(
                     name = "offset",
@@ -462,7 +657,14 @@ public interface DeviceManagementService {
             httpMethod = "GET",
             value = "Getting Installed Application Details of a Device",
             notes = "Get the list of applications subscribed to by a device.",
-            tags = "Device Management")
+            tags = "Device Management",
+            extensions = {
+            @Extension(properties = {
+                    @ExtensionProperty(name = Constants.SCOPE, value = "perm:devices:applications")
+            })
+
+    }
+    )
     @ApiResponses(
             value = {
                     @ApiResponse(
@@ -511,7 +713,6 @@ public interface DeviceManagementService {
                                     "Server error occurred while retrieving the list of installed application on the device.",
                             response = ErrorResponse.class)
             })
-    @Permission(name = "View Devices", permission = "/device-mgt/devices/owning-device/view")
     Response getInstalledApplications(
             @ApiParam(
                     name = "type",
@@ -559,7 +760,13 @@ public interface DeviceManagementService {
             httpMethod = "GET",
             value = "Getting Device Operation Details",
             notes = "Get the details of operations carried out on a selected device.",
-            tags = "Device Management")
+            tags = "Device Management",
+            extensions = {
+            @Extension(properties = {
+                    @ExtensionProperty(name = Constants.SCOPE, value = "perm:devices:operations")
+            })
+    }
+    )
     @ApiResponses(
             value = {
                     @ApiResponse(
@@ -608,7 +815,6 @@ public interface DeviceManagementService {
                                     "Server error occurred while retrieving the operation list scheduled for the device.",
                             response = ErrorResponse.class)
             })
-    @Permission(name = "View Devices", permission = "/device-mgt/devices/owning-device/view")
     Response getDeviceOperations(
             @ApiParam(
                     name = "type",
@@ -665,7 +871,13 @@ public interface DeviceManagementService {
             notes = "A policy is enforced on all the devices that register with WSO2 EMM." +
                     "WSO2 EMM filters the policies based on the device platform (device type)," +
                     "the device ownership type, the user role or name and finally, the policy that matches these filters will be enforced on the device.",
-            tags = "Device Management")
+            tags = "Device Management",
+            extensions = {
+            @Extension(properties = {
+                    @ExtensionProperty(name = Constants.SCOPE, value = "perm:devices:effective-policy")
+            })
+    }
+    )
     @ApiResponses(
             value = {
                     @ApiResponse(
@@ -714,7 +926,6 @@ public interface DeviceManagementService {
                             response = ErrorResponse.class)
             }
     )
-    @Permission(name = "View Devices", permission = "/device-mgt/devices/owning-device/view")
     Response getEffectivePolicyOfDevice(
             @ApiParam(
                     name = "type",
@@ -749,13 +960,19 @@ public interface DeviceManagementService {
             value = "Getting Policy Compliance Details of a Device",
             notes = "A policy is enforced on the devices that register with WSO2 EMM. " +
                     "The server checks if the settings in the device comply with the policy that is enforced on the device using this REST API.",
-            tags = "Device Management")
+            tags = "Device Management",
+            extensions = {
+                @Extension(properties = {
+                        @ExtensionProperty(name = Constants.SCOPE, value = "perm:devices:compliance-data")
+                })
+            }
+    )
     @ApiResponses(
             value = {
                     @ApiResponse(
                             code = 200,
                             message = "OK",
-                            response = ComplianceData.class),
+                            response = NonComplianceData.class),
                     @ApiResponse(
                             code = 400,
                             message = "Bad Request. \n Invalid request or validation error.",
@@ -766,7 +983,6 @@ public interface DeviceManagementService {
                             response = ErrorResponse.class)
             }
     )
-    @Permission(name = "View Devices", permission = "/device-mgt/devices/owning-device/view")
     Response getComplianceDataOfDevice(
             @ApiParam(
                     name = "type",
