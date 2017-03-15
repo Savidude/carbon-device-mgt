@@ -463,7 +463,13 @@ var userModule = function () {
     publicMethods.isAuthorized = function (permission) {
         var carbon = require("carbon");
         var carbonServer = application.get("carbonServer");
-        var carbonUser = session.get(constants.USER_SESSION_KEY);
+        var carbonUser;
+        try {
+            carbonUser = session.get(constants.USER_SESSION_KEY);
+        } catch (e) {
+           log.error("User object was not found in the session");
+           carbonUser = null;
+        }
         var utility = require('/app/modules/utility.js').utility;
         if (!carbonUser) {
             log.error("User object was not found in the session");
@@ -505,7 +511,7 @@ var userModule = function () {
             permissions["LIST_DEVICES"] = true;
             permissions["LIST_OWN_DEVICES"] = true;
         }
-        if (publicMethods.isAuthorized("/permission/admin/device-mgt/devices/owning-device")) {
+        if (publicMethods.isAuthorized("/permission/admin/device-mgt/devices/owning-device/view")) {
             permissions["LIST_OWN_DEVICES"] = true;
         }
         if (publicMethods.isAuthorized("/permission/admin/device-mgt/admin/groups/view")) {
