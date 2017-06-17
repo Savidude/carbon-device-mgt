@@ -22,13 +22,13 @@ import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.wso2.carbon.device.mgt.common.Device;
 import org.wso2.carbon.device.mgt.common.DeviceManagementException;
-import org.wso2.carbon.device.mgt.core.dto.DeviceType;
 import org.wso2.carbon.device.mgt.core.service.DeviceManagementProviderService;
 import org.wso2.carbon.ntask.core.Task;
 import org.wso2.carbon.policy.mgt.common.PolicyManagementException;
 import org.wso2.carbon.policy.mgt.core.cache.impl.PolicyCacheManagerImpl;
 import org.wso2.carbon.policy.mgt.core.internal.PolicyManagementDataHolder;
 import org.wso2.carbon.policy.mgt.core.mgt.PolicyManager;
+import org.wso2.carbon.policy.mgt.core.mgt.bean.UpdatedPolicyDeviceListBean;
 import org.wso2.carbon.policy.mgt.core.mgt.impl.PolicyManagerImpl;
 
 import java.util.ArrayList;
@@ -54,7 +54,8 @@ public class DelegationTask implements Task {
 
         try {
             PolicyManager policyManager = new PolicyManagerImpl();
-            List<String> deviceTypes = policyManager.applyChangesMadeToPolicies();
+            UpdatedPolicyDeviceListBean updatedPolicyDeviceList = policyManager.applyChangesMadeToPolicies();
+            List<String> deviceTypes = updatedPolicyDeviceList.getChangedDeviceTypes();
 
             PolicyCacheManagerImpl.getInstance().rePopulateCache();
 
@@ -62,15 +63,15 @@ public class DelegationTask implements Task {
                 log.debug("Number of device types which policies are changed .......... : " + deviceTypes.size());
             }
             if (!deviceTypes.isEmpty()) {
-                DeviceManagementProviderService service = PolicyManagementDataHolder.getInstance()
-                        .getDeviceManagementService();
+                DeviceManagementProviderService service = PolicyManagementDataHolder.getInstance().
+                        getDeviceManagementService();
                 List<Device> devices;
                 List<Device> toBeNotified;
                 for (String deviceType : deviceTypes) {
                     try {
                         devices = new ArrayList<>();
                         toBeNotified = new ArrayList<>();
-                        devices.addAll(service.getAllDevices(deviceType));
+                        devices.addAll(service.getAllDevices(deviceType, false));
                         //HashMap<Integer, Integer> deviceIdPolicy = policyManager.getAppliedPolicyIdsDeviceIds();
                         for (Device device : devices) {
                             // if (deviceIdPolicy.containsKey(device.getId())) {
@@ -78,7 +79,8 @@ public class DelegationTask implements Task {
                             // }
                         }
                         if (!toBeNotified.isEmpty()) {
-                            PolicyEnforcementDelegator enforcementDelegator = new PolicyEnforcementDelegatorImpl(toBeNotified);
+                            PolicyEnforcementDelegator enforcementDelegator = new PolicyEnforcementDelegatorImpl
+                                    (toBeNotified, updatedPolicyDeviceList.getUpdatedPolicyIds());
                             enforcementDelegator.delegate();
                         }
                     } catch (DeviceManagementException e) {

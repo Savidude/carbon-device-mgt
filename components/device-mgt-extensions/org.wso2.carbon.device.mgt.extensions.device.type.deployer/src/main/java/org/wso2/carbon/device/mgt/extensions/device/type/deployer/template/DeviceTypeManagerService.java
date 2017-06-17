@@ -20,17 +20,25 @@ package org.wso2.carbon.device.mgt.extensions.device.type.deployer.template;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
-import org.wso2.carbon.device.mgt.common.*;
+import org.wso2.carbon.device.mgt.common.DeviceManagementException;
+import org.wso2.carbon.device.mgt.common.DeviceManager;
+import org.wso2.carbon.device.mgt.common.InitialOperationConfig;
+import org.wso2.carbon.device.mgt.common.MonitoringOperation;
+import org.wso2.carbon.device.mgt.common.OperationMonitoringTaskConfig;
+import org.wso2.carbon.device.mgt.common.DeviceStatusTaskPluginConfig;
+import org.wso2.carbon.device.mgt.common.ProvisioningConfig;
 import org.wso2.carbon.device.mgt.common.app.mgt.ApplicationManager;
 import org.wso2.carbon.device.mgt.common.configuration.mgt.ConfigurationEntry;
 import org.wso2.carbon.device.mgt.common.configuration.mgt.PlatformConfiguration;
 import org.wso2.carbon.device.mgt.common.policy.mgt.PolicyMonitoringManager;
 import org.wso2.carbon.device.mgt.common.push.notification.PushNotificationConfig;
 import org.wso2.carbon.device.mgt.common.spi.DeviceManagementService;
+import org.wso2.carbon.device.mgt.extensions.device.type.deployer.config.ConfigProperties;
 import org.wso2.carbon.device.mgt.extensions.device.type.deployer.config.DeviceTypeConfiguration;
 import org.wso2.carbon.device.mgt.extensions.device.type.deployer.config.Property;
 import org.wso2.carbon.device.mgt.extensions.device.type.deployer.config.PushNotificationProvider;
 import org.wso2.carbon.device.mgt.extensions.device.type.deployer.config.TaskConfiguration;
+import org.wso2.carbon.device.mgt.extensions.device.type.deployer.config.DeviceStatusTaskConfiguration;
 import org.wso2.carbon.device.mgt.extensions.device.type.deployer.template.policy.mgt.DefaultPolicyMonitoringManager;
 
 import java.util.ArrayList;
@@ -54,7 +62,7 @@ public class DeviceTypeManagerService implements DeviceManagementService {
     private List<MonitoringOperation> monitoringOperations;
     private PolicyMonitoringManager policyMonitoringManager;
     private InitialOperationConfig initialOperationConfig;
-    private List<String> operations;
+    private DeviceStatusTaskPluginConfig deviceStatusTaskPluginConfig;
 
     public DeviceTypeManagerService(DeviceTypeConfigIdentifier deviceTypeConfigIdentifier,
                                     DeviceTypeConfiguration deviceTypeConfiguration) {
@@ -64,7 +72,10 @@ public class DeviceTypeManagerService implements DeviceManagementService {
         this.populatePushNotificationConfig(deviceTypeConfiguration.getPushNotificationProvider());
         this.operationMonitoringConfigs = new OperationMonitoringTaskConfig();
         this.setOperationMonitoringConfig(deviceTypeConfiguration);
+        this.initialOperationConfig = new InitialOperationConfig();
         this.setInitialOperationConfig(deviceTypeConfiguration);
+        this.deviceStatusTaskPluginConfig = new DeviceStatusTaskPluginConfig();
+        this.setDeviceStatusTaskPluginConfig(deviceTypeConfiguration.getDeviceStatusTaskConfiguration());
         if (deviceTypeConfiguration.getPolicyMonitoring() != null ) {
             this.policyMonitoringManager = new DefaultPolicyMonitoringManager();
         }
@@ -108,10 +119,17 @@ public class DeviceTypeManagerService implements DeviceManagementService {
         if (pushNotificationProvider != null) {
             if (pushNotificationProvider.isFileBasedProperties()) {
                 Map<String, String> staticProps = new HashMap<>();
-                for (Property property : pushNotificationProvider.getConfigProperties().getProperty()) {
-                    staticProps.put(property.getName(), property.getValue());
+                ConfigProperties configProperties = pushNotificationProvider.getConfigProperties();
+                if (configProperties != null) {
+                    List<Property> properties = configProperties.getProperty();
+                    if (properties != null && properties.size() > 0) {
+                        for (Property property : properties) {
+                            staticProps.put(property.getName(), property.getValue());
+                        }
+                    }
                 }
-                pushNotificationConfig = new PushNotificationConfig(pushNotificationProvider.getType(), staticProps);
+                pushNotificationConfig = new PushNotificationConfig(pushNotificationProvider.getType(),
+                        pushNotificationProvider.isScheduled(), staticProps);
             } else {
                 try {
                     PlatformConfiguration deviceTypeConfig = deviceManager.getConfiguration();
@@ -120,7 +138,8 @@ public class DeviceTypeManagerService implements DeviceManagementService {
                         if (configuration.size() > 0) {
                             Map<String, String> properties = this.getConfigProperty(configuration);
                             pushNotificationConfig = new PushNotificationConfig(
-                                    pushNotificationProvider.getType(), properties);
+                                    pushNotificationProvider.getType(), pushNotificationProvider.isScheduled(),
+                                    properties);
                         }
                     }
                 } catch (DeviceManagementException e) {
@@ -160,12 +179,25 @@ public class DeviceTypeManagerService implements DeviceManagementService {
         return initialOperationConfig;
     }
 
+    public DeviceStatusTaskPluginConfig getDeviceStatusTaskPluginConfig() {
+        return deviceStatusTaskPluginConfig;
+    }
+
     private void setProvisioningConfig(String tenantDomain, DeviceTypeConfiguration deviceTypeConfiguration) {
         if (deviceTypeConfiguration.getProvisioningConfig() != null) {
             boolean sharedWithAllTenants = deviceTypeConfiguration.getProvisioningConfig().isSharedWithAllTenants();
             provisioningConfig = new ProvisioningConfig(tenantDomain, sharedWithAllTenants);
         } else {
             provisioningConfig = new ProvisioningConfig(tenantDomain, false);
+        }
+    }
+
+    private void setDeviceStatusTaskPluginConfig(DeviceStatusTaskConfiguration deviceStatusTaskConfiguration) {
+        if (deviceStatusTaskConfiguration != null && deviceStatusTaskConfiguration.isEnabled()) {
+            deviceStatusTaskPluginConfig.setRequireStatusMonitoring(deviceStatusTaskConfiguration.isEnabled());
+            deviceStatusTaskPluginConfig.setIdleTimeToMarkInactive(deviceStatusTaskConfiguration.getIdleTimeToMarkInactive());
+            deviceStatusTaskPluginConfig.setIdleTimeToMarkUnreachable(deviceStatusTaskConfiguration.getIdleTimeToMarkUnreachable());
+            deviceStatusTaskPluginConfig.setFrequency(deviceStatusTaskConfiguration.getFrequency());
         }
     }
 

@@ -23,6 +23,7 @@ import org.apache.commons.logging.LogFactory;
 import org.wso2.carbon.context.CarbonContext;
 import org.wso2.carbon.device.mgt.common.Device;
 import org.wso2.carbon.device.mgt.common.DeviceIdentifier;
+import org.wso2.carbon.device.mgt.common.DeviceManagementException;
 import org.wso2.carbon.device.mgt.common.EnrolmentInfo;
 import org.wso2.carbon.device.mgt.common.InvalidDeviceException;
 import org.wso2.carbon.device.mgt.common.MonitoringOperation;
@@ -40,6 +41,7 @@ import org.wso2.carbon.device.mgt.common.push.notification.NotificationContext;
 import org.wso2.carbon.device.mgt.common.push.notification.NotificationStrategy;
 import org.wso2.carbon.device.mgt.common.push.notification.PushNotificationExecutionFailedException;
 import org.wso2.carbon.device.mgt.core.DeviceManagementConstants;
+import org.wso2.carbon.device.mgt.core.config.DeviceConfigurationManager;
 import org.wso2.carbon.device.mgt.core.dao.DeviceDAO;
 import org.wso2.carbon.device.mgt.core.dao.DeviceManagementDAOException;
 import org.wso2.carbon.device.mgt.core.dao.DeviceManagementDAOFactory;
@@ -130,7 +132,7 @@ public class OperationManagerImpl implements OperationManager {
                 DeviceIDHolder deviceAuthorizationResult = this.authorizeDevices(operation, validDeviceIds);
                 List<DeviceIdentifier> authorizedDeviceList = deviceAuthorizationResult.getValidDeviceIDList();
                 if (authorizedDeviceList.size() <= 0) {
-                    log.info("User : " + getUser() + " is not authorized to perform operations on given device-list.");
+                    log.warn("User : " + getUser() + " is not authorized to perform operations on given device-list.");
                     Activity activity = new Activity();
                     //Send the operation statuses only for admin triggered operations
                     String deviceType = validDeviceIds.get(0).getType();
@@ -145,6 +147,16 @@ public class OperationManagerImpl implements OperationManager {
                 int operationId = this.lookupOperationDAO(operation).addOperation(operationDto);
                 boolean isScheduledOperation = this.isTaskScheduledOperation(operation, deviceIds);
                 boolean isNotRepeated = false;
+                boolean isScheduled = false;
+
+                // check whether device list is greater than batch size notification strategy has enable to send push
+                // notification using scheduler task
+                if (DeviceConfigurationManager.getInstance().getDeviceManagementConfig().
+                        getPushNotificationConfiguration().getSchedulerBatchSize() <= authorizedDeviceList.size() &&
+                        notificationStrategy != null) {
+                    isScheduled = notificationStrategy.getConfig().isScheduled();
+                }
+
                 boolean hasExistingTaskOperation;
                 int enrolmentId;
                 if (org.wso2.carbon.device.mgt.core.dto.operation.mgt.Operation.Control.NO_REPEAT == operationDto.
@@ -161,7 +173,7 @@ public class OperationManagerImpl implements OperationManager {
                     if (isScheduledOperation) {
                         hasExistingTaskOperation = operationDAO.updateTaskOperation(enrolmentId, operationCode);
                         if (!hasExistingTaskOperation) {
-                            operationMappingDAO.addOperationMapping(operationId, enrolmentId);
+                            operationMappingDAO.addOperationMapping(operationId, enrolmentId, isScheduled);
                         }
                     } else if (isNotRepeated) {
                         operationDAO.updateEnrollmentOperationsStatus(enrolmentId, operationCode,
@@ -169,17 +181,27 @@ public class OperationManagerImpl implements OperationManager {
                                                                               Operation.Status.PENDING,
                                                                       org.wso2.carbon.device.mgt.core.dto.operation.mgt.
                                                                               Operation.Status.REPEATED);
-                        operationMappingDAO.addOperationMapping(operationId, enrolmentId);
+                        operationMappingDAO.addOperationMapping(operationId, enrolmentId, isScheduled);
                     } else {
-                        operationMappingDAO.addOperationMapping(operationId, enrolmentId);
+                        operationMappingDAO.addOperationMapping(operationId, enrolmentId, isScheduled);
                     }
-                    if (notificationStrategy != null) {
+                    /*
+                    If notification strategy has not enable to send push notification using scheduler task
+                    we will send notification immediately
+                    */
+                    if (notificationStrategy != null && !isScheduled) {
                         try {
+                            if (log.isDebugEnabled()) {
+                                log.debug("Sending push notification to " + deviceId + " from add operation method.");
+                            }
                             notificationStrategy.execute(new NotificationContext(deviceId, operation));
+                            operationMappingDAO.updateOperationMapping(operationId, enrolmentId, org.wso2.carbon.device.mgt.core.dto.operation.mgt.Operation.PushNotificationStatus.COMPLETED);
                         } catch (PushNotificationExecutionFailedException e) {
                             log.error("Error occurred while sending push notifications to " +
                                       deviceId.getType() + " device carrying id '" +
                                       deviceId + "'", e);
+                            // Reschedule if push notification failed.
+                            operationMappingDAO.updateOperationMapping(operationId, enrolmentId, org.wso2.carbon.device.mgt.core.dto.operation.mgt.Operation.PushNotificationStatus.SCHEDULED);
                         }
                     }
                 }
@@ -272,19 +294,11 @@ public class OperationManagerImpl implements OperationManager {
     }
 
     private Device getDevice(DeviceIdentifier deviceId) throws OperationManagementException {
-        int tenantId = CarbonContext.getThreadLocalCarbonContext().getTenantId();
         try {
-            DeviceManagementDAOFactory.openConnection();
-            return deviceDAO.getDevice(deviceId, tenantId);
-        } catch (SQLException e) {
-            throw new OperationManagementException("Error occurred while opening a connection the data " +
-                                                   "source", e);
-        } catch (DeviceManagementDAOException e) {
-            OperationManagementDAOFactory.rollbackTransaction();
+            return DeviceManagementDataHolder.getInstance().getDeviceManagementProvider().getDevice(deviceId, false);
+        } catch (DeviceManagementException e) {
             throw new OperationManagementException(
-                    "Error occurred while retrieving device info", e);
-        } finally {
-            DeviceManagementDAOFactory.closeConnection();
+                    "Error occurred while retrieving device info.", e);
         }
     }
 
@@ -397,12 +411,8 @@ public class OperationManagerImpl implements OperationManager {
         int enrolmentId = enrolmentInfo.getId();
         //Changing the enrollment status & attempt count if the device is marked as inactive or unreachable
         switch (enrolmentInfo.getStatus()) {
-            case ACTIVE:
-                this.resetAttemptCount(enrolmentId);
-                break;
             case INACTIVE:
             case UNREACHABLE:
-                this.resetAttemptCount(enrolmentId);
                 this.setEnrolmentStatus(enrolmentId, EnrolmentInfo.Status.ACTIVE);
                 break;
         }
@@ -458,12 +468,8 @@ public class OperationManagerImpl implements OperationManager {
         int enrolmentId = enrolmentInfo.getId();
         //Changing the enrollment status & attempt count if the device is marked as inactive or unreachable
         switch (enrolmentInfo.getStatus()) {
-            case ACTIVE:
-                this.resetAttemptCount(enrolmentId);
-                break;
             case INACTIVE:
             case UNREACHABLE:
-                this.resetAttemptCount(enrolmentId);
                 this.setEnrolmentStatus(enrolmentId, EnrolmentInfo.Status.ACTIVE);
                 break;
         }
@@ -1017,24 +1023,6 @@ public class OperationManagerImpl implements OperationManager {
             DeviceManagementDAOFactory.closeConnection();
         }
         return updateStatus;
-    }
-
-    private boolean resetAttemptCount(int enrolmentId) throws OperationManagementException {
-        boolean resetStatus;
-        try {
-            OperationManagementDAOFactory.beginTransaction();
-            resetStatus = operationDAO.resetAttemptCount(enrolmentId);
-            OperationManagementDAOFactory.commitTransaction();
-        } catch (OperationManagementDAOException e) {
-            OperationManagementDAOFactory.rollbackTransaction();
-            throw new OperationManagementException("Error occurred while resetting attempt count of device id : '" +
-                                                   enrolmentId + "'", e);
-        } catch (TransactionManagementException e) {
-            throw new OperationManagementException("Error occurred while initiating a transaction", e);
-        } finally {
-            OperationManagementDAOFactory.closeConnection();
-        }
-        return resetStatus;
     }
 
     private boolean isTaskScheduledOperation(Operation operation, List<DeviceIdentifier> deviceIds) {

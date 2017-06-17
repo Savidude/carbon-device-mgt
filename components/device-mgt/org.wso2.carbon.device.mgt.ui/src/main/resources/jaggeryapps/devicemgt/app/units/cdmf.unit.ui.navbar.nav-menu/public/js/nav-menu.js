@@ -98,6 +98,7 @@ function loadNewNotifications() {
                     var responsePayload = JSON.parse(data);
 
                     if (responsePayload.notifications) {
+                        viewModel.context = context;
                         viewModel.notifications = responsePayload.notifications;
                         if (responsePayload.count > 0) {
                             $(messageSideBar).html(template(viewModel));
@@ -427,7 +428,7 @@ $(document).ready(function () {
     $("#right-sidebar").on("click", ".new-notification", function () {
         var notificationId = $(this).data("id");
         var redirectUrl = $(this).data("url");
-        var markAsReadNotificationsAPI = "/mdm-admin/notifications/" + notificationId + "/CHECKED";
+        var markAsReadNotificationsAPI = "/api/device-mgt/v1.0/notifications/" + notificationId + "/mark-checked";
         var messageSideBar = ".sidebar-messages";
 
         invokerUtil.put(
@@ -456,15 +457,18 @@ $(document).ready(function () {
 
 function statisticLoad(redirectUrl) {
 	var contentType = "application/json";
-
-	var uri = backendEndBasePath + "/admin/devicetype/deploy/device_management/status";
 	var defaultStatusClasses = "fw fw-stack-1x";
 	var content = $("#statistic-response-template").find(".content");
 	var title = content.find("#title");
 	var statusIcon = content.find("#status-icon");
 
-	invokerUtil.get(uri, function (data, textStatus, jqXHR) {
-		if (jqXHR.status == 204) {
+	$.ajax({
+		url: redirectUrl,
+		type: "GET",
+		success: function () {
+			window.location.href = redirectUrl;
+		},
+		error: function() {
 			var urix = backendEndBasePath + "/admin/devicetype/deploy/device_management";
 			var device = {};
 			invokerUtil.post(urix, device, function (data) {
@@ -472,25 +476,39 @@ function statisticLoad(redirectUrl) {
 				statusIcon.attr("class", defaultStatusClasses + " fw-check");
 				$(modalPopupContent).html(content.html());
 				showPopup();
-				setTimeout(function () {
-					hidePopup();
-					// location.reload(true);
-					location.href = redirectUrl;
-				}, 20000);
-
+				poll(redirectUrl);
 			}, function (jqXHR) {
 				title.html("Failed to deploy artifacts, Please contact administrator.");
 				statusIcon.attr("class", defaultStatusClasses + " fw-error");
 				$(modalPopupContent).html(content.html());
 				showPopup();
 			}, contentType);
-		} else {
-			location.href = redirectUrl;
 		}
-	}, function (jqXHR) {
-		title.html("Failed to connect with server, Please contact administrator.");
-		statusIcon.attr("class", defaultStatusClasses + " fw-error");
-		$(modalPopupContent).html(content.html());
-		showPopup();
-	}, contentType);
+	});
+
 }
+var pollingCount = 15;
+function poll(portalUrl) {
+	var content = $("#statistic-response-template").find(".content");
+	var title = content.find("#title");
+	var defaultStatusClasses = "fw fw-stack-1x";
+	var statusIcon = content.find("#status-icon");
+	$.ajax({
+		url: portalUrl,
+		type: "GET",
+		success: function (data) {
+			window.location.href = portalUrl;
+		},
+		dataType: "json",
+		error: setTimeout(function () {
+			pollingCount = pollingCount - 1;
+			if (pollingCount > 0) {
+				poll(portalUrl);
+			} else {
+				window.location.href = portalUrl;
+			}
+		}, 5000),
+		timeout: 5000
+	});
+}
+

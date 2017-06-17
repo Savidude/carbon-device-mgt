@@ -17,15 +17,17 @@
  */
 package org.wso2.carbon.device.mgt.core.config;
 
+import org.wso2.carbon.device.mgt.core.config.geo.location.GeoLocationConfiguration;
+import org.wso2.carbon.device.mgt.core.config.cache.DeviceCacheConfiguration;
 import org.wso2.carbon.device.mgt.core.config.identity.IdentityConfigurations;
 import org.wso2.carbon.device.mgt.core.config.pagination.PaginationConfiguration;
 import org.wso2.carbon.device.mgt.core.config.policy.PolicyConfiguration;
+import org.wso2.carbon.device.mgt.core.config.push.notification.PushNotificationConfiguration;
+import org.wso2.carbon.device.mgt.core.config.status.task.DeviceStatusTaskConfig;
 import org.wso2.carbon.device.mgt.core.config.task.TaskConfiguration;
 
 import javax.xml.bind.annotation.XmlElement;
-import javax.xml.bind.annotation.XmlElementWrapper;
 import javax.xml.bind.annotation.XmlRootElement;
-import java.util.List;
 
 /**
  * Represents Device Mgt configuration.
@@ -39,8 +41,10 @@ public final class DeviceManagementConfig {
     private IdentityConfigurations identityConfigurations;
     private PolicyConfiguration policyConfiguration;
     private PaginationConfiguration paginationConfiguration;
-    private List<String> pushNotificationProviders;
-
+    private PushNotificationConfiguration pushNotificationConfiguration;
+    private DeviceStatusTaskConfig deviceStatusTaskConfig;
+    private DeviceCacheConfiguration deviceCacheConfiguration;
+    private GeoLocationConfiguration geoLocationConfiguration;
 
     @XmlElement(name = "ManagementRepository", required = true)
     public DeviceManagementConfigRepository getDeviceManagementConfigRepository() {
@@ -79,16 +83,6 @@ public final class DeviceManagementConfig {
         this.taskConfiguration = taskConfiguration;
     }
 
-    @XmlElementWrapper(name = "PushNotificationProviders", required = true)
-    @XmlElement(name = "Provider", required = true)
-    public List<String> getPushNotificationProviders() {
-        return pushNotificationProviders;
-    }
-
-    public void setPushNotificationProviders(List<String> pushNotificationProviders) {
-        this.pushNotificationProviders = pushNotificationProviders;
-    }
-
     @XmlElement(name = "PaginationConfiguration", required = true)
     public PaginationConfiguration getPaginationConfiguration() {
         return paginationConfiguration;
@@ -98,5 +92,40 @@ public final class DeviceManagementConfig {
         this.paginationConfiguration = paginationConfiguration;
     }
 
+    @XmlElement(name = "PushNotificationConfiguration", required = true)
+    public PushNotificationConfiguration getPushNotificationConfiguration() {
+        return pushNotificationConfiguration;
+    }
+
+    public void setPushNotificationConfiguration(PushNotificationConfiguration pushNotificationConfiguration) {
+        this.pushNotificationConfiguration = pushNotificationConfiguration;
+    }
+
+    @XmlElement(name = "DeviceStatusTaskConfig", required = true)
+    public DeviceStatusTaskConfig getDeviceStatusTaskConfig() {
+        return deviceStatusTaskConfig;
+    }
+
+    public void setDeviceStatusTaskConfig(DeviceStatusTaskConfig deviceStatusTaskConfig) {
+        this.deviceStatusTaskConfig = deviceStatusTaskConfig;
+    }
+
+    @XmlElement(name = "DeviceCacheConfiguration", required = true)
+    public DeviceCacheConfiguration getDeviceCacheConfiguration() {
+        return deviceCacheConfiguration;
+    }
+
+    public void setDeviceCacheConfiguration(DeviceCacheConfiguration deviceCacheConfiguration) {
+        this.deviceCacheConfiguration = deviceCacheConfiguration;
+    }
+
+    @XmlElement(name = "GeoLocationConfiguration", required = true)
+    public GeoLocationConfiguration getGeoLocationConfiguration() {
+        return geoLocationConfiguration;
+    }
+
+    public void setGeoLocationConfiguration(GeoLocationConfiguration geoLocationConfiguration) {
+        this.geoLocationConfiguration = geoLocationConfiguration;
+    }
 }
 

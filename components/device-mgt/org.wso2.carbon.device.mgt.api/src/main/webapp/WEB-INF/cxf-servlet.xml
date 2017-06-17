@@ -36,11 +36,12 @@
             <ref bean="userManagementService"/>
             <ref bean="userManagementAdminService"/>
             <ref bean="groupManagementService"/>
+            <ref bean="geoService"/>
             <ref bean="groupManagementAdminService"/>
             <ref bean="applicationManagementAdminService"/>
             <ref bean="deviceTypeManagementAdminService"/>
 			<ref bean="deviceTypeManagementAdminService"/>
-			<ref bean="deviceTypePublisherAdminServiceImpl"/>
+			<ref bean="deviceAnalyticsArtifactUploaderAdminService"/>
             <ref bean="swaggerResource"/>
         </jaxrs:serviceBeans>
         <jaxrs:providers>
@@ -76,13 +77,14 @@
     <bean id="roleManagementService" class="org.wso2.carbon.device.mgt.jaxrs.service.impl.RoleManagementServiceImpl"/>
     <bean id="userManagementService" class="org.wso2.carbon.device.mgt.jaxrs.service.impl.UserManagementServiceImpl"/>
     <bean id="groupManagementService" class="org.wso2.carbon.device.mgt.jaxrs.service.impl.GroupManagementServiceImpl"/>
+    <bean id="geoService" class="org.wso2.carbon.device.mgt.jaxrs.service.impl.GeoServiceImpl"/>
     <bean id="deviceManagementAdminService" class="org.wso2.carbon.device.mgt.jaxrs.service.impl.admin.DeviceManagementAdminServiceImpl"/>
     <bean id="applicationManagementAdminService" class="org.wso2.carbon.device.mgt.jaxrs.service.impl.admin.ApplicationManagementAdminServiceImpl"/>
     <bean id="groupManagementAdminService" class="org.wso2.carbon.device.mgt.jaxrs.service.impl.admin.GroupManagementAdminServiceImpl"/>
     <bean id="userManagementAdminService" class="org.wso2.carbon.device.mgt.jaxrs.service.impl.admin.UserManagementAdminServiceImpl"/>
     <bean id="deviceTypeManagementAdminService" class="org.wso2.carbon.device.mgt.jaxrs.service.impl.DeviceTypeManagementServiceImpl"/>
 	<bean id="deviceAccessAuthorizationAdminService" class="org.wso2.carbon.device.mgt.jaxrs.service.impl.admin.DeviceAccessAuthorizationAdminServiceImpl"/>
-	<bean id="deviceTypePublisherAdminServiceImpl" class="org.wso2.carbon.device.mgt.jaxrs.service.impl.admin.DeviceTypePublisherAdminServiceImpl"/>
+	<bean id="deviceAnalyticsArtifactUploaderAdminService" class="org.wso2.carbon.device.mgt.jaxrs.service.impl.admin.DeviceAnalyticsArtifactUploaderAdminServiceImpl"/>
 
 	<bean id="jsonProvider" class="org.wso2.carbon.device.mgt.jaxrs.common.GsonMessageBodyHandler"/>
 

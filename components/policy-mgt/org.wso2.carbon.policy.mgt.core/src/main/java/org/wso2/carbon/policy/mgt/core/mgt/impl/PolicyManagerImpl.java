@@ -39,6 +39,7 @@ import org.wso2.carbon.policy.mgt.core.cache.impl.PolicyCacheManagerImpl;
 import org.wso2.carbon.policy.mgt.core.dao.*;
 import org.wso2.carbon.policy.mgt.core.mgt.PolicyManager;
 import org.wso2.carbon.policy.mgt.core.mgt.ProfileManager;
+import org.wso2.carbon.policy.mgt.core.mgt.bean.UpdatedPolicyDeviceListBean;
 import org.wso2.carbon.policy.mgt.core.util.PolicyManagerUtil;
 
 import java.sql.SQLException;
@@ -189,7 +190,7 @@ public class PolicyManagerImpl implements PolicyManager {
             policy.setProfileId(profileId);
             Timestamp currentTimestamp = new Timestamp(Calendar.getInstance().getTime().getTime());
             policy.getProfile().setUpdatedDate(currentTimestamp);
-
+            policy.setPriorityId(previousPolicy.getPriorityId());
             policyDAO.updatePolicy(policy);
             profileDAO.updateProfile(policy.getProfile());
 
@@ -391,7 +392,7 @@ public class PolicyManagerImpl implements PolicyManager {
         DeviceManagementProviderService service = new DeviceManagementProviderServiceImpl();
         for (DeviceIdentifier deviceIdentifier : deviceIdentifierList) {
             try {
-                Device device = service.getDevice(deviceIdentifier);
+                Device device = service.getDevice(deviceIdentifier, false);
                 deviceList.add(device);
             } catch (DeviceManagementException e) {
                 throw new PolicyManagementException("Error occurred while retrieving device information", e);
@@ -640,7 +641,7 @@ public class PolicyManagerImpl implements PolicyManager {
         try {
 
             DeviceManagementProviderService service = new DeviceManagementProviderServiceImpl();
-            Device device = service.getDevice(deviceIdentifier);
+            Device device = service.getDevice(deviceIdentifier, false);
 
             PolicyManagementDAOFactory.openConnection();
             policyIdList = policyDAO.getPolicyIdsOfDevice(device);
@@ -806,7 +807,7 @@ public class PolicyManagerImpl implements PolicyManager {
         int deviceId = -1;
         try {
             DeviceManagementProviderService service = new DeviceManagementProviderServiceImpl();
-            Device device = service.getDevice(deviceIdentifier);
+            Device device = service.getDevice(deviceIdentifier, false);
             deviceId = device.getId();
 
             PolicyManagementDAOFactory.beginTransaction();
@@ -830,15 +831,15 @@ public class PolicyManagerImpl implements PolicyManager {
     }
 
     @Override
-    public List<String> applyChangesMadeToPolicies() throws PolicyManagementException {
+    public UpdatedPolicyDeviceListBean applyChangesMadeToPolicies() throws PolicyManagementException {
 
         List<String> changedDeviceTypes = new ArrayList<>();
+        List<Policy> updatedPolicies = new ArrayList<>();
+        List<Integer> updatedPolicyIds = new ArrayList<>();
         try {
             //HashMap<Integer, Integer> map = policyDAO.getUpdatedPolicyIdandDeviceTypeId();
-            List<Policy> updatedPolicies = new ArrayList<>();
 //            List<Policy> activePolicies = new ArrayList<>();
 //            List<Policy> inactivePolicies = new ArrayList<>();
-            List<Integer> updatedPolicyIds = new ArrayList<>();
 
 //            List<Policy> allPolicies = this.getPolicies();
             List<Policy> allPolicies = PolicyCacheManagerImpl.getInstance().getAllPolicies();
@@ -867,7 +868,7 @@ public class PolicyManagerImpl implements PolicyManager {
         } finally {
             PolicyManagementDAOFactory.closeConnection();
         }
-        return changedDeviceTypes;
+        return new UpdatedPolicyDeviceListBean(updatedPolicies, updatedPolicyIds, changedDeviceTypes);
     }
 
 
@@ -878,7 +879,7 @@ public class PolicyManagerImpl implements PolicyManager {
         int deviceId = -1;
         try {
             DeviceManagementProviderService service = new DeviceManagementProviderServiceImpl();
-            Device device = service.getDevice(deviceIdentifier);
+            Device device = service.getDevice(deviceIdentifier, false);
             deviceId = device.getId();
             PolicyManagementDAOFactory.beginTransaction();
 
@@ -908,7 +909,7 @@ public class PolicyManagerImpl implements PolicyManager {
         int deviceId = -1;
         try {
             DeviceManagementProviderService service = new DeviceManagementProviderServiceImpl();
-            Device device = service.getDevice(deviceIdentifier);
+            Device device = service.getDevice(deviceIdentifier, false);
             deviceId = device.getId();
             PolicyManagementDAOFactory.beginTransaction();
 
@@ -936,7 +937,7 @@ public class PolicyManagerImpl implements PolicyManager {
         boolean exist;
         try {
             DeviceManagementProviderService service = new DeviceManagementProviderServiceImpl();
-            Device device = service.getDevice(deviceIdentifier);
+            Device device = service.getDevice(deviceIdentifier, false);
             PolicyManagementDAOFactory.openConnection();
             exist = policyDAO.checkPolicyAvailable(device.getId(), device.getEnrolmentInfo().getId());
         } catch (PolicyManagerDAOException e) {
@@ -957,7 +958,7 @@ public class PolicyManagerImpl implements PolicyManager {
     public boolean setPolicyApplied(DeviceIdentifier deviceIdentifier) throws PolicyManagementException {
         try {
             DeviceManagementProviderService service = new DeviceManagementProviderServiceImpl();
-            Device device = service.getDevice(deviceIdentifier);
+            Device device = service.getDevice(deviceIdentifier, false);
 
             PolicyManagementDAOFactory.openConnection();
             policyDAO.setPolicyApplied(device.getId(), device.getEnrolmentInfo().getId());
@@ -995,7 +996,7 @@ public class PolicyManagerImpl implements PolicyManager {
         DeviceManagementProviderService service = new DeviceManagementProviderServiceImpl();
         Device device;
         try {
-            device = service.getDevice(deviceId);
+            device = service.getDevice(deviceId, false);
             if (device == null) {
                 if (log.isDebugEnabled()) {
                     log.debug("No device is found upon the device identifier '" + deviceId.getId() +

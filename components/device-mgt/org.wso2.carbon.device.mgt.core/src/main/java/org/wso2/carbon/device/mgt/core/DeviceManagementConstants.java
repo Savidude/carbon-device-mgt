@@ -22,6 +22,9 @@ import org.wso2.carbon.device.mgt.core.operation.mgt.PolicyOperation;
 
 public final class DeviceManagementConstants {
 
+    public static final String DM_CACHE_MANAGER = "DM_CACHE_MANAGER";
+    public static final String DEVICE_CACHE = "DEVICE_CACHE";
+
     public static final class Common {
         private Common() {
             throw new AssertionError();
@@ -84,6 +87,15 @@ public final class DeviceManagementConstants {
     public static final class OperationAttributes {
         private OperationAttributes() {throw new AssertionError(); }
         public static final String ACTIVITY = "ACTIVITY_";
+    }
+
+    public static final class PushNotifications {
+        private PushNotifications() {
+            throw new AssertionError();
+        }
+        public static final int DEFAULT_SCHEDULER_TASK_INITIAL_DELAY = 60000;
+        public static final int DEFAULT_BATCH_DELAY_MILLS = 60000;
+        public static final int DEFAULT_BATCH_SIZE = 1000;
     }
 
 }

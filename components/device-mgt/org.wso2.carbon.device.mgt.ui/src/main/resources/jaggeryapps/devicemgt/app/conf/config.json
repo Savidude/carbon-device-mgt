@@ -2,7 +2,7 @@
   "appContext": "/devicemgt/",
   "isCloud": false,
   "httpsURL": "https://%iot.gateway.host%:%iot.gateway.https.port%",
-  "httpURL": "http://%iot.gateway.host%:%iot.gateway.http.port",
+  "httpURL": "http://%iot.gateway.host%:%iot.gateway.http.port%",
   "wssURL": "https://%iot.analytics.host%:%iot.analytics.https.port%",
   "portalURL": "https://%iot.analytics.host%:%iot.analytics.https.port%",
   "dashboardServerURL": "%https.ip%",
@@ -176,7 +176,8 @@
     "perm:ios:get-restrictions",
     "perm:ios:wipe-data",
     "perm:admin",
-    "perm:devicetype:deployment"
+    "perm:devicetype:deployment",
+    "perm:geo-service:analytics"
   ],
   "isOAuthEnabled": true,
   "backendRestEndpoints": {
